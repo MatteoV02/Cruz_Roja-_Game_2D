@@ -14,9 +14,9 @@ public class Caja : MonoBehaviour
         col = GetComponent<Collider2D>();
     }
 
-    void OnTriggerEnter2D(Collider2D other)
+    void OnCollisionEnter2D(Collision2D collision)
     {
-        if (!activado && other.CompareTag("Player"))
+        if (!activado && collision.gameObject.CompareTag("Player"))
         {
             activado = true;
             StartCoroutine(TitilarYReaparecer());
