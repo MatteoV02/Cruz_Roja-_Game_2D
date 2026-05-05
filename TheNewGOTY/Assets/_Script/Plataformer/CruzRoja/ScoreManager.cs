@@ -34,4 +34,14 @@ public class ScoreManager : MonoBehaviour
                   " Huesos: " + bones +
                   " Suministros: " + supplies);
     }
+
+    public void ResetItems()
+    {
+        water = 0;
+        bones = 0;
+        supplies = 0;
+
+        Debug.Log("Items reiniciados");
+    }
 }
+
