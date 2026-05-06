@@ -22,23 +22,41 @@ public class PlayerMovementCruz : MonoBehaviour
     private float fuerzaActual;
     private bool cargandoSalto;
 
+    // 🔥 POWER UPS
+    private PlayerPowerUps powerUps;
+    private int saltosUsados = 0;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        powerUps = GetComponent<PlayerPowerUps>();
     }
 
     void Update()
     {
         if (puntoSuelo == null) return;
 
-        // Detección de suelo
+        // Detectar suelo
         enSuelo = Physics2D.OverlapCircle(
             puntoSuelo.position,
             radioSuelo,
             capaSuelo
         );
 
-        // 🔒 BLOQUEO DE MOVIMIENTO AL CARGAR
+        // Resetear saltos al tocar suelo
+        if (enSuelo)
+        {
+            saltosUsados = 0;
+        }
+
+        // Máximo de saltos
+        int maxSaltos = 1;
+        if (powerUps != null && powerUps.doubleJumpActive)
+        {
+            maxSaltos = 2;
+        }
+
+        // Movimiento (bloqueado si carga salto)
         float mover = 0f;
         if (!cargandoSalto)
         {
@@ -47,13 +65,12 @@ public class PlayerMovementCruz : MonoBehaviour
 
         rb.velocity = new Vector2(mover * velocidad, rb.velocity.y);
 
-        // Iniciar carga
-        if (Input.GetKeyDown(KeyCode.Space) && enSuelo)
+        // Iniciar carga de salto
+        if (Input.GetKeyDown(KeyCode.Space) && saltosUsados < maxSaltos)
         {
             cargandoSalto = true;
             fuerzaActual = fuerzaMin;
 
-            // 🔒 Opcional: frenar completamente al empezar a cargar
             rb.velocity = new Vector2(0, rb.velocity.y);
         }
 
@@ -64,14 +81,24 @@ public class PlayerMovementCruz : MonoBehaviour
             fuerzaActual = Mathf.Clamp(fuerzaActual, fuerzaMin, fuerzaMax);
         }
 
-        // Saltar
+        // Ejecutar salto
         if (Input.GetKeyUp(KeyCode.Space) && cargandoSalto)
         {
-            rb.velocity = new Vector2(rb.velocity.x, fuerzaActual);
+            float fuerzaFinal = fuerzaActual;
+
+            // Aplicar boost
+            if (powerUps != null && powerUps.jumpBoostActive)
+            {
+                fuerzaFinal *= 1.5f;
+            }
+
+            rb.velocity = new Vector2(rb.velocity.x, fuerzaFinal);
+
             cargandoSalto = false;
+            saltosUsados++;
         }
 
-        // Mejor caída
+        // Mejorar caída
         if (rb.velocity.y < 0)
         {
             rb.velocity += Vector2.up * Physics2D.gravity.y * 2.5f * Time.deltaTime;
