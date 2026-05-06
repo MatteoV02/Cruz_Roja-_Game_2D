@@ -15,18 +15,27 @@ public class ScoreManager : MonoBehaviour
 
     public void AddItem(ItemType type)
     {
+        int multiplier = 1;
+
+        // Buscar el jugador y ver si tiene doble puntaje activo
+        PlayerPowerUps player = FindObjectOfType<PlayerPowerUps>();
+        if (player != null && player.doubleScoreActive)
+        {
+            multiplier = 2;
+        }
+
         switch (type)
         {
             case ItemType.Water:
-                water++;
+                water += 1 * multiplier;
                 break;
 
             case ItemType.Bone:
-                bones++;
+                bones += 1 * multiplier;
                 break;
 
             case ItemType.Supply:
-                supplies++;
+                supplies += 1 * multiplier;
                 break;
         }
 

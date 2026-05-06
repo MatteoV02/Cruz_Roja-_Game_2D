@@ -1,19 +1,59 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class Collectible : MonoBehaviour
 {
-    public ItemType type;
-
-    void OnTriggerEnter2D(Collider2D other)
+    public enum CollectibleType
     {
-        Debug.Log("Algo entro: " + other.name);
+        Water,
+        Bone,
+        Supply,
+        DoubleJump,
+        JumpBoost,
+        SavePoint,
+        DoubleScore
+    }
 
-        if (other.CompareTag("Player"))
+    public CollectibleType type;
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (!other.CompareTag("Player")) return;
+
+        PlayerPowerUps powerUps = other.GetComponent<PlayerPowerUps>();
+
+        switch (type)
         {
-            Debug.Log("Jugador detectado");
-            ScoreManager.instance.AddItem(type);
-            Destroy(gameObject);
+            // -------- RECURSOS --------
+            case CollectibleType.Water:
+                ScoreManager.instance.AddItem(ItemType.Water);
+                break;
+
+            case CollectibleType.Bone:
+                ScoreManager.instance.AddItem(ItemType.Bone);
+                break;
+
+            case CollectibleType.Supply:
+                ScoreManager.instance.AddItem(ItemType.Supply);
+                break;
+
+            // -------- POWER UPS --------
+            case CollectibleType.DoubleJump:
+                powerUps.ActivateDoubleJump();
+                break;
+
+            case CollectibleType.JumpBoost:
+                powerUps.ActivateJumpBoost();
+                break;
+
+            case CollectibleType.DoubleScore:
+                powerUps.ActivateDoubleScore();
+                break;
+
+            case CollectibleType.SavePoint:
+                powerUps.SavePosition();
+                break;
         }
+
+        Destroy(gameObject);
     }
 }
