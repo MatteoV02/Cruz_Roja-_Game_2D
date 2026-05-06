@@ -17,28 +17,30 @@ public class PlayerMovementCruz : MonoBehaviour
     public LayerMask capaSuelo;
 
     private Rigidbody2D rb;
-    private bool enSuelo;
+    private Animator animator;
 
+    private bool enSuelo;
     private float fuerzaActual;
     private bool cargandoSalto;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
     }
 
     void Update()
     {
         if (puntoSuelo == null) return;
 
-        // Detección de suelo
+        // 🔍 Detectar suelo
         enSuelo = Physics2D.OverlapCircle(
             puntoSuelo.position,
             radioSuelo,
             capaSuelo
         );
 
-        // 🔒 BLOQUEO DE MOVIMIENTO AL CARGAR
+        // 🎮 Movimiento horizontal
         float mover = 0f;
         if (!cargandoSalto)
         {
@@ -47,31 +49,60 @@ public class PlayerMovementCruz : MonoBehaviour
 
         rb.velocity = new Vector2(mover * velocidad, rb.velocity.y);
 
-        // Iniciar carga
+        // 🎬 Animación de movimiento
+        bool isMoving = Mathf.Abs(rb.velocity.x) > 0.1f;
+        animator.SetBool("IsMoving", isMoving);
+
+        // 🔼🔽 Velocidad vertical
+        float velY = rb.velocity.y;
+        animator.SetFloat("VelY", velY);
+
+        // 🧪 DEBUG
+        Debug.Log("VelocityY: " + velY);
+
+        // 🔄 Voltear personaje
+        if (Mathf.Abs(rb.velocity.x) > 0.1f)
+        {
+            transform.localScale = new Vector3(-Mathf.Sign(rb.velocity.x), 1, 1);
+        }
+
+        // ⚡ INICIAR CARGA
         if (Input.GetKeyDown(KeyCode.Space) && enSuelo)
         {
             cargandoSalto = true;
             fuerzaActual = fuerzaMin;
 
-            // 🔒 Opcional: frenar completamente al empezar a cargar
+            animator.SetBool("IsCharging", true);
+
             rb.velocity = new Vector2(0, rb.velocity.y);
         }
 
-        // Cargar salto
+        // ⚡ CARGANDO
         if (Input.GetKey(KeyCode.Space) && cargandoSalto)
         {
             fuerzaActual += velocidadCarga * Time.deltaTime;
             fuerzaActual = Mathf.Clamp(fuerzaActual, fuerzaMin, fuerzaMax);
         }
 
-        // Saltar
+        // 🟢 SALTAR
         if (Input.GetKeyUp(KeyCode.Space) && cargandoSalto)
         {
             rb.velocity = new Vector2(rb.velocity.x, fuerzaActual);
+
             cargandoSalto = false;
+
+            // 🔥 ORDEN CORRECTO
+            animator.SetBool("IsJumping", true);
+            animator.SetBool("IsCharging", false);
         }
 
-        // Mejor caída
+        // 🟫 ATERRIZAJE (CORREGIDO)
+        if (enSuelo && rb.velocity.y <= 0)
+        {
+            animator.SetBool("IsJumping", false);
+        }
+
+        // ⬇️ Mejor caída
         if (rb.velocity.y < 0)
         {
             rb.velocity += Vector2.up * Physics2D.gravity.y * 2.5f * Time.deltaTime;
