@@ -17,6 +17,8 @@ public class Collectible : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        Debug.Log("Funciona");
+
         if (!other.CompareTag("Player")) return;
 
         PlayerPowerUps powerUps = other.GetComponent<PlayerPowerUps>();
@@ -53,7 +55,6 @@ public class Collectible : MonoBehaviour
                 powerUps.SavePosition();
                 break;
         }
-
         Destroy(gameObject);
     }
 }

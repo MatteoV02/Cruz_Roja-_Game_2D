@@ -17,46 +17,30 @@ public class PlayerMovementCruz : MonoBehaviour
     public LayerMask capaSuelo;
 
     private Rigidbody2D rb;
-    private bool enSuelo;
+    private Animator animator;
 
+    private bool enSuelo;
     private float fuerzaActual;
     private bool cargandoSalto;
-
-    // 🔥 POWER UPS
-    private PlayerPowerUps powerUps;
-    private int saltosUsados = 0;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-        powerUps = GetComponent<PlayerPowerUps>();
+        animator = GetComponent<Animator>();
     }
 
     void Update()
     {
         if (puntoSuelo == null) return;
 
-        // Detectar suelo
+        // 🔍 Detectar suelo
         enSuelo = Physics2D.OverlapCircle(
             puntoSuelo.position,
             radioSuelo,
             capaSuelo
         );
 
-        // Resetear saltos al tocar suelo
-        if (enSuelo)
-        {
-            saltosUsados = 0;
-        }
-
-        // Máximo de saltos
-        int maxSaltos = 1;
-        if (powerUps != null && powerUps.doubleJumpActive)
-        {
-            maxSaltos = 2;
-        }
-
-        // Movimiento (bloqueado si carga salto)
+        // 🎮 Movimiento horizontal
         float mover = 0f;
         if (!cargandoSalto)
         {
@@ -65,40 +49,60 @@ public class PlayerMovementCruz : MonoBehaviour
 
         rb.velocity = new Vector2(mover * velocidad, rb.velocity.y);
 
-        // Iniciar carga de salto
-        if (Input.GetKeyDown(KeyCode.Space) && saltosUsados < maxSaltos)
+        // 🎬 Animación de movimiento
+        bool isMoving = Mathf.Abs(rb.velocity.x) > 0.1f;
+        animator.SetBool("IsMoving", isMoving);
+
+        // 🔼🔽 Velocidad vertical
+        float velY = rb.velocity.y;
+        animator.SetFloat("VelY", velY);
+
+        // 🧪 DEBUG
+        Debug.Log("VelocityY: " + velY);
+
+        // 🔄 Voltear personaje
+        if (Mathf.Abs(rb.velocity.x) > 0.1f)
+        {
+            transform.localScale = new Vector3(-Mathf.Sign(rb.velocity.x), 1, 1);
+        }
+
+        // ⚡ INICIAR CARGA
+        if (Input.GetKeyDown(KeyCode.Space) && enSuelo)
         {
             cargandoSalto = true;
             fuerzaActual = fuerzaMin;
 
+            animator.SetBool("IsCharging", true);
+
             rb.velocity = new Vector2(0, rb.velocity.y);
         }
 
-        // Cargar salto
+        // ⚡ CARGANDO
         if (Input.GetKey(KeyCode.Space) && cargandoSalto)
         {
             fuerzaActual += velocidadCarga * Time.deltaTime;
             fuerzaActual = Mathf.Clamp(fuerzaActual, fuerzaMin, fuerzaMax);
         }
 
-        // Ejecutar salto
+        // 🟢 SALTAR
         if (Input.GetKeyUp(KeyCode.Space) && cargandoSalto)
         {
-            float fuerzaFinal = fuerzaActual;
-
-            // Aplicar boost
-            if (powerUps != null && powerUps.jumpBoostActive)
-            {
-                fuerzaFinal *= 1.5f;
-            }
-
-            rb.velocity = new Vector2(rb.velocity.x, fuerzaFinal);
+            rb.velocity = new Vector2(rb.velocity.x, fuerzaActual);
 
             cargandoSalto = false;
-            saltosUsados++;
+
+            // 🔥 ORDEN CORRECTO
+            animator.SetBool("IsJumping", true);
+            animator.SetBool("IsCharging", false);
         }
 
-        // Mejorar caída
+        // 🟫 ATERRIZAJE (CORREGIDO)
+        if (enSuelo && rb.velocity.y <= 0)
+        {
+            animator.SetBool("IsJumping", false);
+        }
+
+        // ⬇️ Mejor caída
         if (rb.velocity.y < 0)
         {
             rb.velocity += Vector2.up * Physics2D.gravity.y * 2.5f * Time.deltaTime;
