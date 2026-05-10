@@ -6,6 +6,12 @@ public class PlayerMovementCruz : MonoBehaviour
     [Header("Movimiento")]
     public float velocidad = 5f;
 
+    [Header("Hielo")]
+    public LayerMask capaHielo;
+    public float aceleracionNormal = 20f;
+    public float aceleracionHielo = 3f;
+    public float desaceleracionHielo = 1.5f;
+
     [Header("Salto variable")]
     public float fuerzaMin = 5f;
     public float fuerzaMax = 10f;
@@ -20,6 +26,7 @@ public class PlayerMovementCruz : MonoBehaviour
     private Animator animator;
 
     private bool enSuelo;
+    private bool enHielo;
     private float fuerzaActual;
     private bool cargandoSalto;
 
@@ -33,40 +40,57 @@ public class PlayerMovementCruz : MonoBehaviour
     {
         if (puntoSuelo == null) return;
 
-        // 🔍 Detectar suelo
         enSuelo = Physics2D.OverlapCircle(
             puntoSuelo.position,
             radioSuelo,
             capaSuelo
         );
 
-        // 🎮 Movimiento horizontal
+        enHielo = Physics2D.OverlapCircle(
+            puntoSuelo.position,
+            radioSuelo,
+            capaHielo
+        );
+
         float mover = 0f;
+
         if (!cargandoSalto)
         {
             mover = Input.GetAxis("Horizontal");
         }
 
-        rb.velocity = new Vector2(mover * velocidad, rb.velocity.y);
+        float velocidadObjetivo = mover * velocidad;
 
-        // 🎬 Animación de movimiento
+        float aceleracionActual;
+
+        if (enHielo)
+        {
+            aceleracionActual = Mathf.Abs(mover) > 0.01f ? aceleracionHielo : desaceleracionHielo;
+        }
+        else
+        {
+            aceleracionActual = aceleracionNormal;
+        }
+
+        float nuevaVelX = Mathf.MoveTowards(
+            rb.velocity.x,
+            velocidadObjetivo,
+            aceleracionActual * Time.deltaTime
+        );
+
+        rb.velocity = new Vector2(nuevaVelX, rb.velocity.y);
+
         bool isMoving = Mathf.Abs(rb.velocity.x) > 0.1f;
         animator.SetBool("IsMoving", isMoving);
 
-        // 🔼🔽 Velocidad vertical
         float velY = rb.velocity.y;
         animator.SetFloat("VelY", velY);
 
-        // 🧪 DEBUG
-        Debug.Log("VelocityY: " + velY);
-
-        // 🔄 Voltear personaje
         if (Mathf.Abs(rb.velocity.x) > 0.1f)
         {
             transform.localScale = new Vector3(-Mathf.Sign(rb.velocity.x), 1, 1);
         }
 
-        // ⚡ INICIAR CARGA
         if (Input.GetKeyDown(KeyCode.Space) && enSuelo)
         {
             cargandoSalto = true;
@@ -77,32 +101,27 @@ public class PlayerMovementCruz : MonoBehaviour
             rb.velocity = new Vector2(0, rb.velocity.y);
         }
 
-        // ⚡ CARGANDO
         if (Input.GetKey(KeyCode.Space) && cargandoSalto)
         {
             fuerzaActual += velocidadCarga * Time.deltaTime;
             fuerzaActual = Mathf.Clamp(fuerzaActual, fuerzaMin, fuerzaMax);
         }
 
-        // 🟢 SALTAR
         if (Input.GetKeyUp(KeyCode.Space) && cargandoSalto)
         {
             rb.velocity = new Vector2(rb.velocity.x, fuerzaActual);
 
             cargandoSalto = false;
 
-            // 🔥 ORDEN CORRECTO
             animator.SetBool("IsJumping", true);
             animator.SetBool("IsCharging", false);
         }
 
-        // 🟫 ATERRIZAJE (CORREGIDO)
         if (enSuelo && rb.velocity.y <= 0)
         {
             animator.SetBool("IsJumping", false);
         }
 
-        // ⬇️ Mejor caída
         if (rb.velocity.y < 0)
         {
             rb.velocity += Vector2.up * Physics2D.gravity.y * 2.5f * Time.deltaTime;
