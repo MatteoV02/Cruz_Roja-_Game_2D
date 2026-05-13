@@ -18,7 +18,7 @@ public class Collectible : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         Debug.Log("Funciona");
-
+        Debug.Log(type);
         if (!other.CompareTag("Player")) return;
 
         PlayerPowerUps powerUps = other.GetComponent<PlayerPowerUps>();
